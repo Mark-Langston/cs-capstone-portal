@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>C++ Hello World Demo | CS Capstone Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="C++ Hello World demo powered by a self-hosted Judge0 instance on the CS Capstone Portal.">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <h1>CS Capstone Programming Portal</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="cpp-hello-world.html">C++ Demo</a>
+      <a href="https://github.com/Mark-Langston/cs-capstone-portal" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="feature">
+      <h2>C++ Hello World Demo</h2>
+      <p>
+        Try editing and running this <code>C++</code> Hello World example in your browser.
+        This page sends your code to a self-hosted <strong>Judge0</strong> API running behind
+        <code>/judge0</code> on <strong>cs-capstone.com</strong>.
+      </p>
+
+      <div class="editor-label">C++ Source Code (language_id: 54)</div>
+      <textarea id="code-editor">
+// You can edit this code and click "Run Code" below.
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello, World from the CS Capstone Portal!" << endl;
+    return 0;
+}
+      </textarea>
+
+      <button class="btn" onclick="runCode()">Run Code</button>
+
+      <div class="output-container">
+        <div class="output-label">Output:</div>
+        <div id="output">
+          <span class="status-pill">Idle</span>
+          Ready when you are.
+        </div>
+      </div>
+    </section>
+
+    <section class="feature">
+      <h2>How It Works</h2>
+      <p>
+        When you click <strong>Run Code</strong>, your C++ source is securely sent to the Judge0 API.
+        Judge0 compiles and runs it inside an isolated sandbox on the server, then returns the result
+        back to this page.
+      </p>
+      <p>
+        This demo is part of the CS Capstone project showcasing modern DevOps, containerization,
+        and safe remote code execution.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    2026 CS Capstone Portal.
+    <br />
+    <a href="https://github.com/Mark-Langston/cs-capstone-portal" target="_blank" rel="noopener noreferrer">
+      View Source on GitHub
+    </a>
+  </footer>
+
+  <script>
+    const JUDGE0_BASE_URL = "/judge0"; // proxied by Apache
+
+    async function runCode() {
+      const outputEl = document.getElementById("output");
+      const code = document.getElementById("code-editor").value;
+
+      if (!code.trim()) {
+        outputEl.innerHTML =
+          '<span class="status-pill status-error">Error</span>No source code provided.';
+        return;
+      }
+
+      outputEl.innerHTML =
+        '<span class="status-pill">Running</span>Submitting to Judge0...';
+
+      try {
+        const res = await fetch(
+          `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true&fields=stdout,stderr,compile_output,message,status`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              source_code: code,
+              language_id: 54
+            })
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const statusId = data.status?.id;
+        const statusDesc = data.status?.description || "Unknown";
+
+        if (statusId === 3) {
+          // Accepted
+          const stdout = (data.stdout || "").trim() || "(no output)";
+          outputEl.innerHTML =
+            `<span class="status-pill status-ok">Accepted</span>${escapeHtml(stdout)}`;
+        } else {
+          const compile = (data.compile_output || "").trim();
+          const stderr = (data.stderr || "").trim();
+          const message = (data.message || "").trim();
+
+          const details =
+            compile || stderr || message || "No additional error details returned.";
+
+          outputEl.innerHTML =
+            `<span class="status-pill status-error">${escapeHtml(statusDesc)}</span>${escapeHtml(details)}`;
+        }
+      } catch (err) {
+        outputEl.innerHTML =
+          `<span class="status-pill status-error">Network</span>${escapeHtml(err.message || "Unexpected error.")}`;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
